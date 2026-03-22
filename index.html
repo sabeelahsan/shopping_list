@@ -20,7 +20,7 @@ ul{list-style:none;padding:0;}
 li{background:#fff;margin:4px 0;padding:8px;border-radius:6px;display:flex;align-items:center;gap:8px;}
 li.inactive{opacity:0.4;}
 .window{background:#e5e7eb;padding:10px;border-radius:10px;}
-.drag-handle{cursor:grab;font-weight:bold;}
+
 .qty{width:60px;}
 </style>
 </head>
@@ -271,28 +271,7 @@ function updateFinalList(){
 
  [...ing,...ess].forEach(text=>{
  const li=document.createElement('li');
- li.draggable=false;
-
- const label=document.createElement('span');
- label.textContent=text;
-
- const handle=document.createElement('span');
- handle.textContent='⋮⋮';
- handle.className='drag-handle';
-
- li.append(label,handle);
-
- handle.onmousedown=()=> li.draggable=true;
- handle.onmouseup=()=> li.draggable=false;
-
- li.ondragstart=e=>e.dataTransfer.setData('text',text);
- li.ondragover=e=>e.preventDefault();
- li.ondrop=e=>{
-  e.preventDefault();
-  const from=[...finalList.children].find(l=>l.innerText===e.dataTransfer.getData('text'));
-  finalList.insertBefore(from,li);
- };
-
+ li.textContent=text;
  finalList.appendChild(li);
 });
 }
