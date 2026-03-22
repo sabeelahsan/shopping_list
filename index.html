@@ -1,273 +1,317 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shopping List App</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; background: #f7f7f7; }
-    h2, h3 { margin-top: 20px; }
-    .page { display: none; }
-    .page.active { display: block; }
-    nav { display: flex; gap: 8px; margin-bottom: 10px; }
-    button { padding: 10px 14px; margin: 4px; border-radius: 8px; border: none; background: #2563eb; color: white; font-size: 14px; }
-    button.secondary { background: #6b7280; }
-    button.dinner { background: #16a34a; }
-    button.selected { background: #14532d; }
-    input, textarea, select { width: 100%; padding: 8px; margin: 6px 0; border-radius: 6px; border: 1px solid #ccc; }
-    table { width: 100%; border-collapse: collapse; background: white; }
-    th, td { border: 1px solid #ddd; padding: 6px; font-size: 13px; }
-    ul { list-style: none; padding: 0; }
-    li { background: white; margin: 4px 0; padding: 8px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
-    li.done { text-decoration: line-through; opacity: 0.5; }
-    .window { background: #e5e7eb; padding: 10px; border-radius: 10px; }
-    .draggable { cursor: grab; }
-    .qty { width: 60px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shopping List App</title>
+<style>
+body { font-family: system-ui, sans-serif; margin:0; padding:12px; background:#f7f7f7; }
+h2,h3 { margin-top:20px; }
+.page{display:none;} .page.active{display:block;}
+nav{display:flex;gap:8px;margin-bottom:10px;}
+button{padding:8px 12px;margin:4px;border-radius:8px;border:none;background:#2563eb;color:#fff;}
+button.secondary{background:#6b7280;}
+button.dinner{background:#16a34a;}
+button.selected{background:#14532d;}
+input,textarea,select{width:100%;padding:6px;margin:4px 0;border-radius:6px;border:1px solid #ccc;}
+table{width:100%;border-collapse:collapse;background:#fff;}
+th,td{border:1px solid #ddd;padding:6px;font-size:13px;}
+ul{list-style:none;padding:0;}
+li{background:#fff;margin:4px 0;padding:8px;border-radius:6px;display:flex;align-items:center;gap:8px;}
+li.inactive{opacity:0.4;}
+.window{background:#e5e7eb;padding:10px;border-radius:10px;}
+.drag-handle{cursor:grab;font-weight:bold;}
+.qty{width:60px;}
+</style>
 </head>
 <body>
 
 <nav>
-  <button onclick="showPage('main')">Main</button>
-  <button onclick="showPage('manage')" class="secondary">Manage</button>
+<button onclick="showPage('main')">Main</button>
+<button onclick="showPage('manage')" class="secondary">Manage</button>
 </nav>
 
-<!-- MANAGE PAGE -->
 <div id="manage" class="page">
-  <h2>Dinner Recipes (Table 1)</h2>
+<h2>Dinner Recipes (Table 1)</h2>
+<input id="dinnerName" placeholder="Dinner name" />
+<textarea id="dinnerIngredients" placeholder="Ingredients (comma separated)"></textarea>
+<select id="dinnerCategory"></select>
+<button onclick="addDinner()">Add Dinner</button>
 
-  <input id="dinnerName" placeholder="Dinner name" />
-  <textarea id="dinnerIngredients" placeholder="Ingredients (comma separated)"></textarea>
-  <select id="dinnerCategory"></select>
-  <button onclick="addDinner()">Add Dinner</button>
+<table>
+<thead>
+<tr><th>Name</th><th>Ingredients</th><th>Category</th><th>Actions</th></tr>
+</thead>
+<tbody id="dinnerTable"></tbody>
+</table>
 
-  <table>
-    <thead>
-      <tr><th>Name</th><th>Ingredients</th><th>Category</th><th>Delete</th></tr>
-    </thead>
-    <tbody id="dinnerTable"></tbody>
-  </table>
-
-  <h2>Essential Items (Table 2)</h2>
-  <input id="essentialItem" placeholder="Item name" />
-  <button onclick="addEssential()">Add Item</button>
-  <ul id="essentialTable"></ul>
+<h2>Essential Items (Table 2)</h2>
+<input id="essentialItem" placeholder="Item name" />
+<button onclick="addEssential()">Add Item</button>
+<ul id="essentialTable"></ul>
 </div>
 
-<!-- MAIN PAGE -->
 <div id="main" class="page active">
-  <h2>Select Dinners</h2>
-  <div id="dinnerButtons"></div>
+<h2>Select Dinners</h2>
+<div id="dinnerButtons"></div>
 
-  <h2>Window 1 – Dinner Ingredients</h2>
-  <div class="window"><ul id="ingredientsList"></ul></div>
+<h2>Window 1 – Dinner Ingredients</h2>
+<div class="window"><ul id="ingredientsList"></ul></div>
 
-  <h2>Window 2 – Essential Items</h2>
-  <div class="window"><ul id="essentialList"></ul></div>
+<h2>Window 2 – Essential Items</h2>
+<div class="window"><ul id="essentialList"></ul></div>
 
-  <h2>Window 3 – Final Shopping List</h2>
-  <div class="window"><ul id="finalList"></ul></div>
+<h2>Window 3 – Final Shopping List</h2>
+<div class="window"><ul id="finalList"></ul></div>
 
-  <button onclick="copyToClipboard()">Copy</button>
+<button onclick="copyToClipboard()">Copy</button>
 </div>
 
 <script>
-  const categories = ['FORT GJORT', 'FISK', 'ITALIA', 'SALAT/WRAP', 'CURRY', 'DIVERSE'];
+const categories=['FORT GJORT','FISK','ITALIA','SALAT/WRAP','CURRY','DIVERSE'];
 
-  const store = {
-    dinners: JSON.parse(localStorage.getItem('dinners') || '[]'),
-    essentials: JSON.parse(localStorage.getItem('essentials') || '[]')
+const store={
+ dinners:JSON.parse(localStorage.getItem('dinners')||'[]'),
+ essentials:JSON.parse(localStorage.getItem('essentials')||'[]')
+};
+
+function save(){
+ localStorage.setItem('dinners',JSON.stringify(store.dinners));
+ localStorage.setItem('essentials',JSON.stringify(store.essentials));
+ renderAll();
+}
+
+function showPage(id){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+}
+
+categories.forEach(c=>{
+ const o=document.createElement('option');
+ o.value=o.textContent=c;
+ dinnerCategory.appendChild(o);
+});
+
+function addDinner(){
+ const name=dinnerName.value.trim();
+ const ingredients=dinnerIngredients.value.split(',').map(i=>i.trim()).filter(Boolean);
+ const category=dinnerCategory.value;
+ if(!name||!ingredients.length) return;
+ store.dinners.push({name,ingredients,category});
+ dinnerName.value=dinnerIngredients.value='';
+ save();
+}
+
+function addEssential(){
+ const name=essentialItem.value.trim();
+ if(!name) return;
+ store.essentials.push({name});
+ essentialItem.value='';
+ save();
+}
+
+function renderManageTables(){
+ dinnerTable.innerHTML='';
+ store.dinners.forEach((d,i)=>{
+ const tr=document.createElement('tr');
+
+ const nameTd=document.createElement('td');
+ const ingTd=document.createElement('td');
+ const catTd=document.createElement('td');
+ const actTd=document.createElement('td');
+
+ const nameInput=document.createElement('input');
+ nameInput.value=d.name; nameInput.disabled=true;
+
+ const ingInput=document.createElement('input');
+ ingInput.value=d.ingredients.join(', '); ingInput.disabled=true;
+
+ const sel=document.createElement('select');
+ categories.forEach(c=>{
+  const o=document.createElement('option');
+  o.value=o.textContent=c;
+  if(c===d.category) o.selected=true;
+  sel.appendChild(o);
+ });
+ sel.disabled=true;
+
+ const editBtn=document.createElement('button'); editBtn.textContent='Edit';
+ const delBtn=document.createElement('button'); delBtn.textContent='Delete';
+
+ let editing=false;
+ editBtn.onclick=()=>{
+  editing=!editing;
+  nameInput.disabled=!editing;
+  ingInput.disabled=!editing;
+  sel.disabled=!editing;
+  editBtn.textContent=editing?'Save':'Edit';
+  if(!editing){
+    d.name=nameInput.value;
+    d.ingredients=ingInput.value.split(',').map(i=>i.trim()).filter(Boolean);
+    d.category=sel.value;
+    save();
+  }
+ };
+
+ delBtn.onclick=()=>{ store.dinners.splice(i,1); save(); };
+
+ nameTd.appendChild(nameInput);
+ ingTd.appendChild(ingInput);
+ catTd.appendChild(sel);
+ actTd.appendChild(editBtn);
+ actTd.appendChild(delBtn);
+
+ tr.append(nameTd,ingTd,catTd,actTd);
+ dinnerTable.appendChild(tr);
+ });
+
+ essentialTable.innerHTML='';
+ store.essentials.forEach((e,i)=>{
+ const li=document.createElement('li');
+ const input=document.createElement('input');
+ input.value=e.name; input.disabled=true;
+
+ const editBtn=document.createElement('button'); editBtn.textContent='Edit';
+ const delBtn=document.createElement('button'); delBtn.textContent='Delete';
+
+ let editing=false;
+ editBtn.onclick=()=>{
+  editing=!editing;
+  input.disabled=!editing;
+  editBtn.textContent=editing?'Save':'Edit';
+  if(!editing){ e.name=input.value; save(); }
+ };
+
+ delBtn.onclick=()=>{ store.essentials.splice(i,1); save(); };
+
+ li.append(input,editBtn,delBtn);
+ essentialTable.appendChild(li);
+ });
+}
+
+let selectedDinners=new Set();
+let selectedItems=new Set();
+
+function renderDinnerButtons(){
+ dinnerButtons.innerHTML='';
+ categories.forEach(cat=>{
+ const group=document.createElement('div');
+ const h=document.createElement('h3'); h.textContent=cat;
+ group.appendChild(h);
+
+ store.dinners.forEach((d,i)=>{
+  if(d.category!==cat) return;
+  const b=document.createElement('button');
+  b.textContent=d.name;
+  b.className='dinner';
+  if(selectedDinners.has(i)) b.classList.add('selected');
+  b.onclick=()=>{
+   selectedDinners.has(i)?selectedDinners.delete(i):selectedDinners.add(i);
+   renderAll();
   };
+  group.appendChild(b);
+ });
 
-  function save() {
-    localStorage.setItem('dinners', JSON.stringify(store.dinners));
-    localStorage.setItem('essentials', JSON.stringify(store.essentials));
-    renderAll();
-  }
+ dinnerButtons.appendChild(group);
+ });
+}
 
-  function showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-  }
+function renderIngredients(){
+ ingredientsList.innerHTML='';
+ const items=[...selectedDinners].flatMap(i=>store.dinners[i].ingredients);
+ items.forEach(item=>{
+ const li=document.createElement('li');
+ li.textContent=item;
+ li.classList.add('inactive');
 
-  categories.forEach(c => {
-    const o = document.createElement('option');
-    o.value = o.textContent = c;
-    dinnerCategory.appendChild(o);
+ li.onclick=()=>{
+  li.classList.toggle('inactive');
+  updateFinalList();
+ };
+
+ ingredientsList.appendChild(li);
+ });
+}
+
+function renderEssentials(){
+ essentialList.innerHTML='';
+ store.essentials.forEach((e,i)=>{
+ const li=document.createElement('li');
+ li.classList.add('inactive');
+
+ const span=document.createElement('span'); span.textContent=e.name;
+ const qty=document.createElement('input'); qty.className='qty'; qty.placeholder='Qty';
+
+ li.append(span,qty);
+
+ li.onclick=(ev)=>{
+  if(ev.target.tagName==='INPUT') return;
+  li.classList.toggle('inactive');
+  updateFinalList();
+ };
+
+ essentialList.appendChild(li);
+ });
+}
+
+function updateFinalList(){
+ finalList.innerHTML='';
+
+ const ing=[...ingredientsList.children]
+  .filter(li=>!li.classList.contains('inactive'))
+  .map(li=>li.textContent);
+
+ const ess=[...essentialList.children]
+  .filter(li=>!li.classList.contains('inactive'))
+  .map(li=>{
+    const name=li.querySelector('span').textContent;
+    const qty=li.querySelector('input').value;
+    return qty?`${qty} ${name}`:name;
   });
 
-  function addDinner() {
-    const name = dinnerName.value.trim();
-    const ingredients = dinnerIngredients.value.split(',').map(i => i.trim()).filter(Boolean);
-    const category = dinnerCategory.value;
-    if (!name || !ingredients.length) return;
-    store.dinners.push({ name, ingredients, category });
-    dinnerName.value = dinnerIngredients.value = '';
-    save();
-  }
+ [...ing,...ess].forEach(text=>{
+ const li=document.createElement('li');
+ li.draggable=false;
 
-  function addEssential() {
-    const item = essentialItem.value.trim();
-    if (!item) return;
-    store.essentials.push({ name: item, qty: '' });
-    essentialItem.value = '';
-    save();
-  }
+ const label=document.createElement('span');
+ label.textContent=text;
 
-  function toggleDone(li) {
-    li.classList.toggle('done');
-    updateFinalList();
-  }
+ const handle=document.createElement('span');
+ handle.textContent='⋮⋮';
+ handle.className='drag-handle';
 
-  function renderManageTables() {
-    dinnerTable.innerHTML = '';
-    store.dinners.forEach((d, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${d.name}</td><td>${d.ingredients.join(', ')}</td>`;
+ li.append(label,handle);
 
-      const catTd = document.createElement('td');
-      const sel = document.createElement('select');
-      categories.forEach(c => {
-        const o = document.createElement('option');
-        o.value = o.textContent = c;
-        if (c === d.category) o.selected = true;
-        sel.appendChild(o);
-      });
-      sel.onchange = () => { d.category = sel.value; save(); };
-      catTd.appendChild(sel);
+ handle.onmousedown=()=> li.draggable=true;
+ handle.onmouseup=()=> li.draggable=false;
 
-      const delTd = document.createElement('td');
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'X';
-      delBtn.onclick = () => { store.dinners.splice(i, 1); save(); };
-      delTd.appendChild(delBtn);
+ li.ondragstart=e=>e.dataTransfer.setData('text',text);
+ li.ondragover=e=>e.preventDefault();
+ li.ondrop=e=>{
+  e.preventDefault();
+  const from=[...finalList.children].find(l=>l.innerText===e.dataTransfer.getData('text'));
+  finalList.insertBefore(from,li);
+ };
 
-      tr.appendChild(catTd);
-      tr.appendChild(delTd);
-      dinnerTable.appendChild(tr);
-    });
+ finalList.appendChild(li);
+});
+}
 
-    essentialTable.innerHTML = '';
-    store.essentials.forEach((e, i) => {
-      const li = document.createElement('li');
-      li.textContent = e.name;
-      li.onclick = () => { store.essentials.splice(i, 1); save(); };
-      essentialTable.appendChild(li);
-    });
-  }
+function copyToClipboard(){
+ const text=[...finalList.children].map(li=>li.innerText.replace('⋮⋮','').trim()).join('\n');
+ navigator.clipboard.writeText(text);
+ alert('Copied to clipboard');
+}
 
-  let selectedDinners = new Set();
+function renderAll(){
+ renderManageTables();
+ renderDinnerButtons();
+ renderIngredients();
+ renderEssentials();
+ updateFinalList();
+}
 
-  function renderDinnerButtons() {
-    dinnerButtons.innerHTML = '';
-    categories.forEach(cat => {
-      const group = document.createElement('div');
-      const h = document.createElement('h3');
-      h.textContent = cat;
-      group.appendChild(h);
-
-      store.dinners.forEach((d, i) => {
-        if (d.category !== cat) return;
-        const b = document.createElement('button');
-        b.textContent = d.name;
-        b.className = 'dinner';
-        if (selectedDinners.has(i)) b.classList.add('selected');
-        b.onclick = () => {
-          selectedDinners.has(i) ? selectedDinners.delete(i) : selectedDinners.add(i);
-          renderDinnerButtons();
-          renderIngredients();
-        };
-        group.appendChild(b);
-      });
-
-      dinnerButtons.appendChild(group);
-    });
-  }
-
-  function renderIngredients() {
-    ingredientsList.innerHTML = '';
-    const items = [...selectedDinners].flatMap(i => store.dinners[i].ingredients);
-    [...new Set(items)].forEach(item => {
-      const li = document.createElement('li');
-      li.textContent = item;
-      li.onclick = () => toggleDone(li);
-      ingredientsList.appendChild(li);
-    });
-    renderEssentials();
-  }
-
-  function renderEssentials() {
-    essentialList.innerHTML = '';
-    store.essentials.forEach(e => {
-      const li = document.createElement('li');
-
-      const span = document.createElement('span');
-      span.textContent = e.name;
-
-      const qty = document.createElement('input');
-      qty.className = 'qty';
-      qty.placeholder = 'Qty';
-      qty.value = e.qty;
-      qty.oninput = () => { e.qty = qty.value; };
-
-      li.appendChild(span);
-      li.appendChild(qty);
-      li.onclick = ev => {
-        if (ev.target.tagName === 'INPUT') return;
-        toggleDone(li);
-      };
-
-      essentialList.appendChild(li);
-    });
-    updateFinalList();
-  }
-
-  function updateFinalList() {
-    finalList.innerHTML = '';
-
-    const remainingIngredients = [...ingredientsList.children]
-      .filter(li => !li.classList.contains('done'))
-      .map(li => li.textContent);
-
-    const remainingEssentials = [...essentialList.children]
-      .filter(li => !li.classList.contains('done'))
-      .map(li => {
-        const name = li.querySelector('span').textContent;
-        const qty = li.querySelector('input').value;
-        return qty ? `${qty} ${name}` : name;
-      });
-
-    [...remainingIngredients, ...remainingEssentials].forEach(text => {
-      const li = document.createElement('li');
-      li.textContent = text;
-      li.draggable = true;
-      li.classList.add('draggable');
-
-      li.ondragstart = e => e.dataTransfer.setData('text', text);
-      li.ondragover = e => e.preventDefault();
-      li.ondrop = e => {
-        e.preventDefault();
-        const from = [...finalList.children].find(l => l.textContent === e.dataTransfer.getData('text'));
-        finalList.insertBefore(from, li);
-      };
-
-      finalList.appendChild(li);
-    });
-  }
-
-  function copyToClipboard() {
-    const text = [...finalList.children].map(li => li.textContent).join('\n');
-    navigator.clipboard.writeText(text);
-    alert('Copied to clipboard');
-  }
-
-  function renderAll() {
-    renderManageTables();
-    renderDinnerButtons();
-    renderIngredients();
-  }
-
-  renderAll();
+renderAll();
 </script>
 </body>
 </html>
